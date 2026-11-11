@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Speed Test — WPM &amp; Accuracy</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #0B1F3A; color: #EAF6FC; min-height: 100vh; padding: 24px 16px; }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 1.7rem; margin-bottom: 4px; }
+  .sub { text-align: center; color: #9fc3d8; margin-bottom: 20px; font-size: .95rem; }
+  .card { background: #fff; color: #111827; border-radius: 14px; padding: 22px; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .controls label { font-size: .9rem; font-weight: 600; color: #374151; }
+  select { padding: 8px; font-size: .95rem; border: 1px solid #d1d5db; border-radius: 8px; }
+  button { padding: 9px 16px; font-size: .95rem; border: none; border-radius: 8px; cursor: pointer; background: #1769AA; color: #fff; }
+  button.secondary { background: #e5e7eb; color: #111827; }
+  button:hover { opacity: .9; }
+  .stats { display: flex; gap: 10px; margin-bottom: 16px; }
+  .stat { flex: 1; background: #EAF6FC; border-radius: 10px; padding: 10px; text-align: center; }
+  .stat .num { font-size: 1.5rem; font-weight: 700; color: #0B1F3A; }
+  .stat .lbl { font-size: .8rem; color: #64748B; }
+  #passage { font-size: 1.15rem; line-height: 2; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; min-height: 130px; user-select: none; }
+  #passage .done { color: #15803d; }
+  #passage .wrong { color: #fff; background: #dc2626; border-radius: 3px; }
+  #passage .current { background: #bfdbfe; border-radius: 3px; }
+  #passage .todo { color: #6b7280; }
+  #input { width: 100%; margin-top: 14px; padding: 12px; font-size: 1.05rem; border: 2px solid #d1d5db; border-radius: 8px; }
+  #input:focus { outline: none; border-color: #20A4D8; }
+  #input:disabled { background: #f3f4f6; }
+  #message { margin-top: 14px; text-align: center; font-size: 1.05rem; font-weight: 600; min-height: 1.4em; }
+  #history { margin-top: 18px; }
+  #history h3 { font-size: .95rem; margin-bottom: 8px; color: #374151; }
+  #historyList { list-style: none; }
+  #historyList li { padding: 7px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 6px; font-size: .9rem; }
+  .note { margin-top: 16px; text-align: center; color: #9fc3d8; font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⌨️ Typing Speed Test</h1>
+  <p class="sub">Type the passage as fast and accurately as you can. WPM, accuracy and best scores — all in one page.</p>
+  <div class="card">
+    <div class="controls">
+      <label for="duration">Test length:</label>
+      <select id="duration">
+        <option value="30">30 seconds</option>
+        <option value="60" selected>60 seconds</option>
+        <option value="120">2 minutes</option>
+        <option value="0">Full passage</option>
+      </select>
+      <button id="newBtn">New passage</button>
+      <button id="restartBtn" class="secondary">Restart</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num" id="wpm">0</div><div class="lbl">WPM</div></div>
+      <div class="stat"><div class="num" id="acc">100%</div><div class="lbl">Accuracy</div></div>
+      <div class="stat"><div class="num" id="time">60</div><div class="lbl">Seconds left</div></div>
+      <div class="stat"><div class="num" id="best">—</div><div class="lbl">Best WPM</div></div>
+    </div>
+
+    <div id="passage" aria-label="Passage to type"></div>
+    <input id="input" type="text" placeholder="Click here and start typing…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="message"></div>
+
+    <div id="history">
+      <h3>Recent results (this browser)</h3>
+      <ul id="historyList"><li>No tests yet — finish one to see it here.</li></ul>
+    </div>
+  </div>
+  <p class="note">WPM = (correct characters ÷ 5) ÷ minutes. Passages are original sentences written for this page. Scores are saved only in your browser (localStorage).</p>
+</div>
+
+<script>
+"use strict";
+const PASSAGES = [
+  "The morning sun rose over the quiet town and the streets slowly filled with people heading to work. A small shop opened its doors and the smell of fresh bread drifted out into the cool air.",
+  "Driving a car through the city needs patience and attention. Check your mirrors before changing lanes, keep a safe distance from the vehicle ahead, and never rush through a yellow light.",
+  "Learning to type well is a skill that pays off every single day. Sit up straight, keep your fingers on the home row, and look at the screen instead of the keyboard while you practise.",
+  "A good cup of tea starts with fresh water and the right leaves. Let the water boil, pour it slowly, wait for the colour to deepen, and then enjoy it while it is still warm.",
+  "The old library on the corner holds thousands of books about history, science and adventure. Students come here to study, writers come to think, and children come to hear stories read aloud.",
+  "Rain fell gently on the rooftops all evening while the city lights reflected in the wet streets. Inside, families cooked dinner, shared stories, and planned the week ahead together.",
+  "A healthy routine is simple to start and hard to keep. Drink enough water, walk for thirty minutes, sleep at the same time every night, and put your phone away an hour before bed.",
+  "The market was busy with sellers calling out prices for fresh fruit, vegetables and spices. Shoppers compared quality, bargained politely, and carried their bags home with a smile."
+];
+
+let passage = "", typed = "", started = false, finished = false;
+let startTime = 0, timerId = null, secondsLeft = 60, duration = 60;
+let correctChars = 0, totalTyped = 0;
+
+const passageEl = document.getElementById("passage");
+const inputEl = document.getElementById("input");
+const wpmEl = document.getElementById("wpm");
+const accEl = document.getElementById("acc");
+const timeEl = document.getElementById("time");
+const bestEl = document.getElementById("best");
+const messageEl = document.getElementById("message");
+const durationEl = document.getElementById("duration");
+const historyList = document.getElementById("historyList");
+
+function pickPassage() {
+  return PASSAGES[Math.floor(Math.random() * PASSAGES.length)];
+}
+
+function renderPassage() {
+  let html = "";
+  for (let i = 0; i < passage.length; i++) {
+    const ch = passage[i] === " " ? "&nbsp;" : passage[i].replace(/</g, "&lt;");
+    let cls = "todo";
+    if (i < typed.length) cls = typed[i] === passage[i] ? "done" : "wrong";
+    else if (i === typed.length) cls = "current";
+    html += '<span class="' + cls + '">' + ch + "</span>";
+  }
+  passageEl.innerHTML = html;
+}
+
+function loadBest() {
+  const b = localStorage.getItem("tst-best-wpm");
+  bestEl.textContent = b ? b : "—";
+}
+function loadHistory() {
+  const raw = localStorage.getItem("tst-history");
+  const items = raw ? JSON.parse(raw) : [];
+  if (!items.length) return;
+  historyList.innerHTML = "";
+  items.slice(0, 5).forEach(h => {
+    const li = document.createElement("li");
+    li.textContent = h.date + " — " + h.wpm + " WPM, " + h.acc + "% accuracy (" + h.mode + ")";
+    historyList.appendChild(li);
+  });
+}
+
+function liveStats() {
+  const mins = Math.max((Date.now() - startTime) / 60000, 1 / 60);
+  const wpm = Math.round((correctChars / 5) / mins);
+  wpmEl.textContent = isFinite(wpm) ? wpm : 0;
+  accEl.textContent = (totalTyped ? Math.round(100 * correctChars / totalTyped) : 100) + "%";
+}
+
+function finish(reason) {
+  if (finished) return;
+  finished = true;
+  clearInterval(timerId);
+  inputEl.disabled = true;
+  const mins = Math.max((Date.now() - startTime) / 60000, 1 / 60);
+  const wpm = Math.round((correctChars / 5) / mins);
+  const acc = totalTyped ? Math.round(100 * correctChars / totalTyped) : 100;
+  messageEl.textContent = reason + "  Result: " + wpm + " WPM, " + acc + "% accuracy.";
+  const prevBest = parseInt(localStorage.getItem("tst-best-wpm") || "0", 10);
+  if (wpm > prevBest) {
+    localStorage.setItem("tst-best-wpm", String(wpm));
+    messageEl.textContent += "  🎉 New best!";
+  }
+  const raw = localStorage.getItem("tst-history");
+  const items = raw ? JSON.parse(raw) : [];
+  items.unshift({ date: new Date().toLocaleString(), wpm: wpm, acc: acc,
+                  mode: duration === 0 ? "full passage" : duration + "s" });
+  localStorage.setItem("tst-history", JSON.stringify(items.slice(0, 10)));
+  loadBest(); loadHistory();
+}
+
+function startTimer() {
+  if (duration === 0) return; // full-passage mode: no countdown
+  secondsLeft = duration;
+  timeEl.textContent = secondsLeft;
+  timerId = setInterval(() => {
+    secondsLeft--;
+    timeEl.textContent = secondsLeft;
+    liveStats();
+    if (secondsLeft <= 0) finish("Time's up!");
+  }, 1000);
+}
+
+function reset(newPassage) {
+  clearInterval(timerId);
+  if (newPassage) passage = pickPassage();
+  typed = ""; started = false; finished = false;
+  correctChars = 0; totalTyped = 0;
+  duration = parseInt(durationEl.value, 10);
+  inputEl.disabled = false;
+  inputEl.value = "";
+  wpmEl.textContent = "0"; accEl.textContent = "100%";
+  timeEl.textContent = duration === 0 ? "∞" : duration;
+  messageEl.textContent = "";
+  renderPassage();
+  inputEl.focus();
+}
+
+inputEl.addEventListener("input", () => {
+  if (finished) return;
+  const val = inputEl.value;
+  // Ignore typing beyond the passage end
+  if (val.length > passage.length) { inputEl.value = typed; return; }
+  if (!started) { started = true; startTime = Date.now(); startTimer(); }
+  typed = val;
+  correctChars = 0; totalTyped = typed.length;
+  for (let i = 0; i < typed.length; i++) if (typed[i] === passage[i]) correctChars++;
+  renderPassage();
+  liveStats();
+  if (typed.length === passage.length) finish("Passage complete!");
+});
+
+inputEl.addEventListener("paste", e => e.preventDefault());
+document.getElementById("newBtn").addEventListener("click", () => reset(true));
+document.getElementById("restartBtn").addEventListener("click", () => reset(false));
+durationEl.addEventListener("change", () => reset(false));
+
+passage = pickPassage();
+reset(false);
+loadBest(); loadHistory();
+</script>
+</body>
+</html>
